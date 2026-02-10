@@ -2,7 +2,7 @@
 CC = g++
 
 # Compiler flags
-CFLAGS = -Wall -Wextra -g -O0
+CFLAGS = -g
 
 # X11 library flags
 LDFLAGS = -lX11

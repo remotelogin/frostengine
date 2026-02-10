@@ -1,5 +1,9 @@
 # frostengine!
 
+![frostengine_showcase_image](https://raw.githubusercontent.com/remotelogin/frostengine/main/.github_files/frostengine_showcase.gif)
+
+---
+
  Its an engine! It works, its single threaded, but still performs pretty well ngl.
  
  its written in plain cpp20 and x11 to draw indiviual pixels to a window. the rest is entirely made from scratch.

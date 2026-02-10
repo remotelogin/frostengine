@@ -19,14 +19,14 @@ class model {
 
   //model data
   mesh model_data;
-  
-  float fThetaX = 0.0f;
-  float fThetaY = 0.0f;
-  float fThetaZ = 0.0f;
 
-  float fPosition_X = 0.0f;
-  float fPosition_Y = 0.0f;
-  float fPosition_Z = 0.0f;
+  float fPosition_X;
+  float fPosition_Y;
+  float fPosition_Z;
+  
+  float fThetaX;
+  float fThetaY;
+  float fThetaZ;
 
   //model functions
   mesh import_obj_mesh(std::string file_path) {
@@ -44,7 +44,7 @@ class model {
       char line[1024];
       file.getline(line,1024);
 
-      std::strstream s;
+      std::stringstream s;
 
       s << line;
 
@@ -66,7 +66,7 @@ class model {
 
 	s >> junk >> f[0] >> f[1] >> f[2];
 	
-	output.tris.push_back({ vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] , /*texture*/ 0.0f, 1.0f, 0x000000 });
+	output.tris.push_back({vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] , /*texture*/ 0.0f, 1.0f, 0x0});
 
       }
       

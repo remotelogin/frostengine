@@ -1,4 +1,3 @@
-#include <streambuf>
 #define FILL_COLOR 0xAA22BB
 #define BORDER_COLOR 0x000000
 #define GLOBAL_ILLUMINATION_VALUE 0.1f
@@ -12,7 +11,6 @@
 #include "math.h"
 #include <cmath>
 #include <fstream>
-#include <strstream>
 #include <algorithm>
 #include <chrono>
 #include <thread>
@@ -178,7 +176,7 @@ public:
       char line[1024];
       file.getline(line,1024);
 
-      std::strstream s;
+      std::stringstream s;
 
       s << line;
 
@@ -200,7 +198,7 @@ public:
 
 	s >> junk >> f[0] >> f[1] >> f[2];
 	
-	output.tris.push_back({ vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] , /*texture*/ 0.0f, 1.0f, 0x000000 });
+	output.tris.push_back({ vertices[f[0] - 1], vertices[f[1] - 1], vertices[f[2] - 1] , 0.0f, 1.0f, 0x000000 });
 
       }
       
@@ -297,14 +295,10 @@ public:
 	//+++++++++++++++++++++++++++
 
 	loaded_lights[0].fPosition_X = std::sin(time/100) * 4;
-	loaded_models[1].fPosition_X = std::sin(time/100) * 4;
-	loaded_lights[0].fPosition_Z = std::cos(time/100) * 4;
-	loaded_models[1].fPosition_Z = std::cos(time/100) * 4;
-
+	loaded_models[2].fPosition_X = loaded_lights[0].fPosition_X;
+	
 	loaded_lights[1].fPosition_X = std::sin(time2/80) * 3;
-	loaded_models[2].fPosition_X = std::sin(time2/80) * 3;
-	loaded_lights[1].fPosition_Y = std::cos(time2/80) * 3;
-	loaded_models[2].fPosition_Y = std::cos(time2/80) * 3;
+	loaded_models[3].fPosition_X = loaded_lights[1].fPosition_X;
 
 	time2++;
 	
@@ -599,7 +593,11 @@ public:
 
 	    if(i_light.type == FACE_SHADE_DISTANCE) {
 	      
-	      float distance_to_light = std::sqrt(std::pow((tri.p[0].x - i_light.fPosition_X) , 2 ) + std::pow((tri.p[0].y - i_light.fPosition_Y) , 2 ) + std::pow( ( tri.p[0].z - i_light.fPosition_Z) , 2 ));
+	      vec3d P = triTransformed.p[0];
+	      float dx = P.x - i_light.fPosition_X;
+	      float dy = P.y - i_light.fPosition_Y;
+	      float dz = P.z - i_light.fPosition_Z;
+	      float distance_to_light = std::sqrt(dx*dx + dy*dy + dz*dz);
 	      
 	      if(distance_to_light > i_light.strength){
 		triTransformed.col_rgb  = float_to_rgb_grayscale( 0x000000 ); 
@@ -608,9 +606,13 @@ public:
 
 	      float normalized_light_strength = 1-(0.001f + (( 0.999f - 0.001f ) / i_light.strength ) * distance_to_light); 
 
-	      float delta_to_light = normal.x * i_light.fPosition_X + normal.y * i_light.fPosition_Y + normal.z * i_light.fPosition_Z;
+	      vec3d L = { i_light.fPosition_X - P.x,
+			  i_light.fPosition_Y - P.y,
+			  i_light.fPosition_Z - P.z };
+	      vector_Normalise(L);
+	      float ndotl = std::max(0.0f, vector_DotProduct(normal, L));
              
-	      normalized_light_strength = normalized_light_strength * delta_to_light;
+	      normalized_light_strength = normalized_light_strength * ndotl;
 	      
 	      col_rgb_towrite = col_rgb_towrite + normalized_light_strength;
 	      
@@ -804,17 +806,24 @@ public:
     return;
   }
 
-  void load_light(unsigned int strength, float pos_x_in, float pos_y_in, float pos_z_in, float rot_x_in, float rot_y_in, float rot_z_in  , available_light_types type) {
+  void load_light(unsigned int strength,
+                float pos_x_in, float pos_y_in, float pos_z_in,
+                float rot_x_in, float rot_y_in, float rot_z_in,
+                available_light_types type)
+{
+  model imported_model = model(import_obj_mesh("models/light_source_mesh.obj"),
+                               pos_x_in, pos_y_in, pos_z_in,
+                               rot_x_in, rot_y_in, rot_z_in);
 
-    model imported_model = model(import_obj_mesh("models/light_source_mesh.obj") , rot_x_in , rot_y_in , rot_z_in , pos_x_in , pos_y_in , pos_z_in);
+  light imported_light = light(strength,
+                               rot_x_in, rot_y_in, rot_z_in,
+                               pos_x_in, pos_y_in, pos_z_in,
+                               type);
 
-    light imported_light = light(strength , rot_x_in , rot_y_in , rot_z_in , pos_x_in , pos_y_in , pos_z_in, type);
-    
-    loaded_models.push_back(imported_model);
-    loaded_lights.push_back(imported_light);
-    
-    return;
-  }
+  loaded_models.push_back(imported_model);
+  loaded_lights.push_back(imported_light);
+}
+
   
   
   void run() {
@@ -1064,7 +1073,7 @@ int main() {
 
   //load models
   app.load_model("models/keyboard.obj", 0.0f , 0.0f , 0.0f , 0.0f , 0.0f , 0.0f );
-  app.load_model("models/floor.obj", 0.0f , 1.0f , 0.0f , 180.0f , 0.0f , 0.0f );
+  app.load_model("models/floor.obj", 0.0f , 3.0f , 0.0f , 180.0f , 0.0f , 0.0f );
 
   app.load_light(5,-3.0f,0.0f,-3.0f,0.0f,0.0f,0.0f,FACE_SHADE_DISTANCE);
   app.load_light(5,-3.0f,0.0f,0.0f,0.0f,0.0f,0.0f,FACE_SHADE_DISTANCE);
